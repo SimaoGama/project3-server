@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose');
 
-const tripSchema = new mongoose.Schema({
+const tripSchema = new Schema({
   destination: {
     type: String,
     required: true
@@ -12,8 +12,14 @@ const tripSchema = new mongoose.Schema({
   endDate: {
     type: Date,
     required: true
-  }
-  // Add other fields specific to a trip
+  },
+  days: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Day'
+    }
+  ],
+  order: [String] // Array to store the order of day IDs
 });
 
 const Trip = model('Trip', tripSchema);
