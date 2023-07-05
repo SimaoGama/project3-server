@@ -12,5 +12,7 @@ const planSchema = new Schema({
   }
 });
 
-const Plan = mongoose.model('Plan', planSchema);
+const Plan = model('Plan', planSchema);
 module.exports = Plan;
+
+//too complex, add later! :D

@@ -28,5 +28,5 @@ const accommodationSchema = new Schema({
   }
 });
 
-const Accommodation = mongoose.model('Accommodation', accommodationSchema);
+const Accommodation = model('Accommodation', accommodationSchema);
 module.exports = Accommodation;

@@ -7,6 +7,8 @@ const bcrypt = require('bcryptjs');
 const { isAuthenticated } = require('../middleware/jwt.middleware');
 const saltRounds = 10;
 
+const StatusCodes = require('http-status-codes').StatusCodes;
+
 router.post('/signup', async (req, res, next) => {
   const { firstName, lastName, email, password } = req.body;
 
@@ -24,19 +26,25 @@ router.post('/signup', async (req, res, next) => {
     //use regex to validate email
     const emailRegex = /^[^\s@]+@[^\s@]+.[^\s@]{2,}$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: 'Provide a valid email address' });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'Provide a valid email address' });
     }
 
     //use regex to validate password
     const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{6,}$/;
     if (!passwordRegex.test(password)) {
-      return res.status(400).json({ message: 'Provide a valid password' });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'Provide a valid password' });
     }
 
     //validate if email exists
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: 'Email already exists' });
+      return res
+        .status(StatusCodes.IM_A_TEAPOT)
+        .json({ message: 'Email already exists' });
     }
 
     //encrypting the password
