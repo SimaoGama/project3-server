@@ -1,6 +1,6 @@
 const router = require('express').Router();
 
-const User = require('../models/user-models/User.model');
+const User = require('../models/User.model');
 const jwt = require('jsonwebtoken');
 
 const bcrypt = require('bcryptjs');
@@ -20,7 +20,9 @@ router.post('/signup', async (req, res, next) => {
       firstName === '' ||
       lastName === ''
     ) {
-      return res.status(400).json({ message: 'All fields are mandatory' });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'All fields are mandatory' });
     }
 
     //use regex to validate email
@@ -43,7 +45,7 @@ router.post('/signup', async (req, res, next) => {
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res
-        .status(StatusCodes.IM_A_TEAPOT)
+        .status(StatusCodes.IM_A_TEAPOT) // :)
         .json({ message: 'Email already exists' });
     }
 
@@ -75,13 +77,15 @@ router.post('/login', async (req, res, next) => {
 
   try {
     if (email === '' || password === '') {
-      return res.status(400).json({ message: 'All fields are mandatory' });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'All fields are mandatory' });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
       return res
-        .status(418)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ message: 'Provided email is not registered' });
     }
 
@@ -108,7 +112,9 @@ router.post('/login', async (req, res, next) => {
       //send the JWT as response
       res.json({ authToken });
     } else {
-      res.status(400).json({ message: 'Incorrect password' });
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'Incorrect password' });
     }
   } catch (error) {
     console.log('An error has occurred while logging in', error);

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const { Schema, model } = require('mongoose');
 
 // schema to have the lat and lng of the google maps places api
 const locationSchema = new Schema({

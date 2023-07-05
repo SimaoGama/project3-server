@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const mongoose = require('mongoose');
+const StatusCodes = require('http-status-codes').StatusCodes;
 // const fileUploader = require('../config/cloudinary.config');
 
 //importing the models
@@ -7,6 +8,10 @@ const Trip = require('../models/trip-models/Trip.model');
 const Day = require('../models/trip-models/Day.model');
 const Accommodation = require('../models/trip-models/Accommodation.model');
 const Restaurant = require('../models/trip-models/Restaurant.model');
+
+router.get('/test', (r, e, n) => {
+  e.send('test');
+});
 
 //create a new trip
 router.post('/trip', async (req, res, next) => {
@@ -38,7 +43,9 @@ router.post('/day', async (req, res, next) => {
     const accommodationData = accommodationResponse.data;
 
     // Fetch restaurants data from API
-    const restaurantsResponse = await axios.get('API_LINK');
+    const restaurantsResponse = await axios.get(
+      'https://travel-advisor.p.rapidapi.com/restaurants/list-in-boundary'
+    ); // need to fetch bl/tr lng and lat to get the exact place and extract the info
     const restaurantsData = restaurantsResponse.data;
 
     // Create accommodation document
@@ -79,13 +86,13 @@ router.post('/day', async (req, res, next) => {
     });
 
     // Update the trip's days array and save the trip
-    await Trip.findByIdAndUpdate(
+    const updatedTrip = await Trip.findByIdAndUpdate(
       tripId,
       { $push: { days: newDay._id } },
       { new: true }
     );
 
-    res.json(newDay);
+    res.json(updatedTrip);
   } catch (err) {
     console.log('An error occurred creating a new day', err);
     next(err);
@@ -114,7 +121,9 @@ router.get('/trip/:id', async (req, res, next) => {
     const trip = await Trip.findById(id).populate('days');
 
     if (!trip) {
-      return res.status(404).json({ message: 'Trip not found' });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'Trip not found' });
     }
 
     res.json(trip);
@@ -130,7 +139,9 @@ router.put('/trip/:id', async (req, res, next) => {
 
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Specified id is not valid' });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'Specified id is not valid' });
     }
 
     const updatedTrip = await Trip.findByIdAndUpdate(
@@ -147,7 +158,7 @@ router.put('/trip/:id', async (req, res, next) => {
 
     if (!updatedTrip) {
       return res
-        .status(404)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ message: 'No trip found with the specified id' });
     }
 
@@ -164,7 +175,9 @@ router.delete('/trip/:id', async (req, res, next) => {
   try {
     // Check if ID is a valid mongoose ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'Specified id is not valid' });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: 'Specified id is not valid' });
     }
 
     await Trip.findByIdAndDelete(id);
@@ -176,13 +189,15 @@ router.delete('/trip/:id', async (req, res, next) => {
 });
 
 //route that receives the image/file, sends it to cloudinary and returns a URL
-router.post('/upload', fileUploader.single('file'), (req, res, next) => {
-  try {
-    res.json({ fileUrl: req.file.path });
-  } catch (error) {
-    res.status(500).json({ message: 'An error occurred uploading the file' });
-    next(error);
-  }
-});
+// router.post('/upload', fileUploader.single('file'), (req, res, next) => {
+//   try {
+//     res.json({ fileUrl: req.file.path });
+//   } catch (error) {
+//     res
+//       .status(StatusCodes.INTERNAL_SERVER_ERROR)
+//       .json({ message: 'An error occurred uploading the file' });
+//     next(error);
+//   }
+// });
 
 module.exports = router;
