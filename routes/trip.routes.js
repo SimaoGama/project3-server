@@ -14,18 +14,22 @@ const Restaurant = require("../models/trip-models/Restaurant.model");
 router.post("/trips/new", async (req, res, next) => {
   const { destination, startDate, endDate } = req.body;
   const { userId } = req.body; // Retrieve the user ID from the request body
-  console.log(userId);
+
+  if (endDate <= startDate) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "End date must be after start date" });
+  }
+
   try {
     const newTrip = await Trip.create({
+      userId,
       destination,
       startDate,
       endDate,
       days: [],
       order: [], //order to
     });
-
-    // Update the user document with the new trip
-    await User.findByIdAndUpdate(userId, { $push: { trips: newTrip._id } });
 
     res.json(newTrip);
   } catch (err) {
@@ -101,12 +105,12 @@ router.post("/day", async (req, res, next) => {
 });
 
 // Retrieves all trips for the user
-router.get("/trips/:userId", async (req, res, next) => {
-  const { userId } = req.params;
-
+router.get("/trips", async (req, res, next) => {
+  const { userId } = req.query;
   try {
     const userTrips = await Trip.find({ userId }).populate("days");
 
+    console.log(`USER TRIPS: ${JSON.stringify(userTrips)}`);
     res.json(userTrips);
   } catch (err) {
     console.log("An error occurred while getting the trips", err);

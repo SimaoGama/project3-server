@@ -1,28 +1,28 @@
-const router = require('express').Router();
+const router = require("express").Router();
 
-const User = require('../models/User.model');
-const jwt = require('jsonwebtoken');
+const User = require("../models/User.model");
+const jwt = require("jsonwebtoken");
 
-const bcrypt = require('bcryptjs');
-const { isAuthenticated } = require('../middleware/jwt.middleware');
+const bcrypt = require("bcryptjs");
+const { isAuthenticated } = require("../middleware/jwt.middleware");
 const saltRounds = 10;
 
-const StatusCodes = require('http-status-codes').StatusCodes;
+const StatusCodes = require("http-status-codes").StatusCodes;
 
-router.post('/signup', async (req, res, next) => {
+router.post("/signup", async (req, res, next) => {
   const { firstName, lastName, email, password } = req.body;
 
   try {
     //check if all parameters have been declared
     if (
-      email === '' ||
-      password === '' ||
-      firstName === '' ||
-      lastName === ''
+      email === "" ||
+      password === "" ||
+      firstName === "" ||
+      lastName === ""
     ) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'All fields are mandatory' });
+        .json({ message: "All fields are mandatory" });
     }
 
     //use regex to validate email
@@ -30,7 +30,7 @@ router.post('/signup', async (req, res, next) => {
     if (!emailRegex.test(email)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'Provide a valid email address' });
+        .json({ message: "Provide a valid email address" });
     }
 
     //use regex to validate password
@@ -38,7 +38,7 @@ router.post('/signup', async (req, res, next) => {
     if (!passwordRegex.test(password)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'Provide a valid password' });
+        .json({ message: "Provide a valid password" });
     }
 
     //validate if email exists
@@ -46,7 +46,7 @@ router.post('/signup', async (req, res, next) => {
     if (userExists) {
       return res
         .status(StatusCodes.IM_A_TEAPOT) // :)
-        .json({ message: 'Email already exists' });
+        .json({ message: "Email already exists" });
     }
 
     //encrypting the password
@@ -58,35 +58,35 @@ router.post('/signup', async (req, res, next) => {
       firstName,
       lastName,
       email,
-      password: hashedPassword
+      password: hashedPassword,
     });
 
     res.json({
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       email: newUser.email,
-      _id: newUser._id
+      _id: newUser._id,
     });
   } catch (error) {
     console.log(error);
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post("/login", async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
-    if (email === '' || password === '') {
+    if (email === "" || password === "") {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'All fields are mandatory' });
+        .json({ message: "All fields are mandatory" });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'Provided email is not registered' });
+        .json({ message: "Provided email is not registered" });
     }
 
     //check if password is correct
@@ -99,35 +99,61 @@ router.post('/login', async (req, res, next) => {
         _id: user._id,
         email: user.email,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
       };
 
       //create and sign the JWT
       //we pass the user payload and the token secret defined in .env
 
       const authToken = jwt.sign(payload, process.env.TOKEN_SECRET, {
-        algorithm: 'HS256', // algo to encrypt the token, the default is HS256
-        expiresIn: '6h' // TTL
+        algorithm: "HS256", // algo to encrypt the token, the default is HS256
+        expiresIn: "6h", // TTL
       });
       //send the JWT as response
       res.json({ authToken });
     } else {
       res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: 'Incorrect password' });
+        .json({ message: "Incorrect password" });
     }
   } catch (error) {
-    console.log('An error has occurred while logging in', error);
+    console.log("An error has occurred while logging in", error);
     next(error);
   }
 });
 
-//verify - used to check if the jwt stored on the client is valid
-router.get('/verify', isAuthenticated, (req, res, next) => {
+// verify - used to check if the jwt stored on the client is valid
+router.get("/verify", isAuthenticated, (req, res, next) => {
   //if the jwt is valid it gets decoded and made available in req.payload
-  console.log('req.payload', req.payload);
+  console.log("req.payload", req.payload);
 
   res.json(req.payload);
 });
+
+// router.get("/verify", isAuthenticated, (req, res, next) => {
+//   // if the JWT is valid, it gets decoded and made available in req.payload
+//   console.log("req.payload", req.payload);
+
+//   // Fetch the user data from the database using the _id in the payload
+//   User.findById(req.payload._id)
+//     .populate("trips")
+//     .exec((err, user) => {
+//       if (err) {
+//         console.log("An error occurred while fetching user data", err);
+//         return res
+//           .status(StatusCodes.INTERNAL_SERVER_ERROR)
+//           .json({ message: "An error occurred while fetching user data" });
+//       }
+
+//       if (!user) {
+//         return res
+//           .status(StatusCodes.NOT_FOUND)
+//           .json({ message: "User not found" });
+//       }
+//       console.log(user);
+//       // Include the entire user object in the response
+//       res.json(user);
+//     });
+// });
 
 module.exports = router;
