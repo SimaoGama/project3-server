@@ -13,7 +13,7 @@ const Restaurant = require("../models/trip-models/Restaurant.model");
 //create a new trip
 router.post("/trips/new", async (req, res, next) => {
   const { destination, startDate, endDate } = req.body;
-  const { userId } = req.body; // Retrieve the user ID from the request body
+  const { userId } = req.body;
 
   if (endDate <= startDate) {
     return res
@@ -21,15 +21,50 @@ router.post("/trips/new", async (req, res, next) => {
       .json({ message: "End date must be after start date" });
   }
 
+  const getTotalDays = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const timeDiff = Math.abs(end.getTime() - start.getTime());
+    const totalDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return totalDays;
+  };
+
   try {
     const newTrip = await Trip.create({
       userId,
+      // imageUrl,
       destination,
       startDate,
       endDate,
       days: [],
-      order: [], //order to
+      order: [],
     });
+
+    const totalDays = getTotalDays(new Date(startDate), new Date(endDate));
+
+    const createdDays = await Promise.all(
+      Array.from({ length: totalDays + 1 }).map((_, index) =>
+        Day.create({
+          date: new Date(
+            new Date(startDate).getTime() + index * 24 * 60 * 60 * 1000
+          ),
+          city: null,
+          accommodation: null,
+          restaurants: [],
+          plans: [],
+        })
+      )
+    );
+
+    // Add the created day IDs to the trip's "days" array
+    const dayIds = createdDays.map((day) => day._id);
+    newTrip.days = dayIds;
+
+    // Update the trip with the day order
+    newTrip.order = dayIds.map((dayId) => dayId.toString());
+
+    // Save the updated trip
+    await newTrip.save();
 
     res.json(newTrip);
   } catch (err) {
@@ -110,7 +145,6 @@ router.get("/trips", async (req, res, next) => {
   try {
     const userTrips = await Trip.find({ userId }).populate("days");
 
-    console.log(`USER TRIPS: ${JSON.stringify(userTrips)}`);
     res.json(userTrips);
   } catch (err) {
     console.log("An error occurred while getting the trips", err);
@@ -174,7 +208,7 @@ router.put("/trip/:id", async (req, res, next) => {
   }
 });
 
-router.delete("/trip/:id", async (req, res, next) => {
+router.delete("/trips/:id", async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -185,8 +219,21 @@ router.delete("/trip/:id", async (req, res, next) => {
         .json({ message: "Specified id is not valid" });
     }
 
-    await Trip.findByIdAndDelete(id);
-    res.json({ message: `Trip with id ${id} was deleted successfully` });
+    // Delete the trip
+    const deletedTrip = await Trip.findByIdAndDelete(id);
+
+    if (!deletedTrip) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "Trip not found" });
+    }
+
+    // Delete the associated days
+    await Day.deleteMany({ _id: { $in: deletedTrip.days } });
+
+    res.json({
+      message: `Trip with id ${id} and associated days were deleted successfully`,
+    });
   } catch (err) {
     console.log("An error occurred while deleting the trip", err);
     next(err);
