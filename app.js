@@ -20,10 +20,12 @@ require("./config")(app);
 const indexRoutes = require("./routes/index.routes");
 const authRoutes = require("./routes/auth.routes");
 const tripRoutes = require("./routes/trip.routes");
+const dayRoutes = require("./routes/day.routes");
 // const userRoutes = require("./routes/user.routes");
 
 app.use("/api", indexRoutes);
 app.use("/api", tripRoutes);
+app.use("/api", dayRoutes);
 // app.use("/api", userRoutes);
 app.use("/auth", authRoutes);
 
