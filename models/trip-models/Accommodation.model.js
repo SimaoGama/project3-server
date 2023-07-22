@@ -10,9 +10,8 @@ const accommodationSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Location'
   },
-  address: {
-    type: String,
-    required: true
+  classification: {
+    type: String
   },
   phone: {
     type: String
