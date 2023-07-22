@@ -13,47 +13,59 @@ const Plan = require("../models/trip-models/Plan.model");
 const City = require("../models/trip-models/City.model");
 const Location = require("../models/trip-models/Location.model");
 
-router.put("/day/:dayId", async (req, res, next) => {
+router.put("/:dayId", async (req, res) => {
   const { dayId } = req.params;
-  const updatedDayData = req.body;
+  const selectedPlace = req.body.selectedPlace;
 
   try {
-    const selectedPlace = updatedDayData.selectedPlace;
-    if (!selectedPlace) {
-      return res
-        .status(400)
-        .json({ error: "Selected place data not provided" });
-    }
-
-    const { type } = selectedPlace.category.key;
-
     // Find the day by ID
     const day = await Day.findById(dayId);
 
     if (!day) {
-      return res.status(404).json({ error: "Day not found" });
+      return res.status(StatusCodes.NOT_FOUND).json({ error: "Day not found" });
     }
 
+    const newLocation = new Location({
+      lat: selectedPlace.latitude,
+      lng: selectedPlace.longitude,
+    });
+    const createdLocation = await newLocation.save();
+
     // Check the type of the selected place
-    if (type === "restaurant") {
-      // If the selected place is a restaurant, update the 'restaurants' array in the day object
-      const { city, location, ...restaurantData } = selectedPlace;
-      const updatedRestaurant = await Restaurant.create(restaurantData);
-      day.restaurants.push(updatedRestaurant._id);
-    } else if (type === "hotel") {
-      // If the selected place is a hotel, update the 'accommodation' field in the day object
-      const { city, location, ...accommodationData } = selectedPlace;
-      const updatedAccommodation = await Accommodation.create(
-        accommodationData
-      );
-      day.accommodation = updatedAccommodation._id;
+    if (selectedPlace.category.key === "restaurant") {
+      const newRestaurant = new Restaurant({
+        name: selectedPlace.name,
+        location: createdLocation._id,
+        address: selectedPlace.address,
+        phone: selectedPlace.phone,
+        rating: selectedPlace.rating,
+        reviews: selectedPlace.reviews,
+        photos: selectedPlace.photos,
+      });
+
+      day.restaurants.push(newRestaurant);
+    } else if (selectedPlace.category.key === "hotel") {
+      const newAccommodation = new Accommodation({
+        name: selectedPlace.name,
+        location: createdLocation._id,
+        address: selectedPlace.address,
+        phone: selectedPlace.phone,
+        rating: selectedPlace.rating,
+        reviews: selectedPlace.reviews,
+        photos: selectedPlace.photos,
+      });
+
+      day.accommodation = newAccommodation;
     } else {
       // Handle other types if needed
-      return res.status(400).json({ error: "Invalid place type" });
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid place type" });
     }
 
     // Save the updated day
     const updatedDay = await day.save();
+    console.log(updatedDay);
 
     res.json(updatedDay);
   } catch (error) {
@@ -61,4 +73,29 @@ router.put("/day/:dayId", async (req, res, next) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// GET restaurant by ID
+router.get("/restaurant/:restaurantId", async (req, res) => {
+  const { restaurantId } = req.params;
+
+  try {
+    const restaurant = await Restaurant.findById(restaurantId);
+    res.json(restaurant);
+  } catch (err) {
+    res.status(500).json({ error: "Unable to fetch restaurant data." });
+  }
+});
+
+// GET accommodation by ID
+router.get("/accommodation/:accommodationId", async (req, res) => {
+  const { accommodationId } = req.params;
+
+  try {
+    const accommodation = await Accommodation.findById(accommodationId);
+    res.json(accommodation);
+  } catch (err) {
+    res.status(500).json({ error: "Unable to fetch accommodation data." });
+  }
+});
+
 module.exports = router;
