@@ -107,4 +107,34 @@ router.get('/accommodation/:accommodationId', async (req, res) => {
   }
 });
 
+router.delete('/restaurant/:restaurantId', async (req, res) => {
+  const { restaurantId } = req.params;
+
+  try {
+    const deletedRestaurant = await Restaurant.findByIdAndDelete(restaurantId);
+    if (!deletedRestaurant) {
+      return res.status(404).json({ error: 'Restaurant not found.' });
+    }
+    res.json({ message: 'Restaurant deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to delete restaurant.' });
+  }
+});
+
+router.delete('/accommodation/:accommodationId', async (req, res) => {
+  const { accommodationId } = req.params;
+
+  try {
+    const deletedAccommodation = await Accommodation.findByIdAndDelete(
+      accommodationId
+    );
+    if (!deletedAccommodation) {
+      return res.status(404).json({ error: 'Accommodation not found.' });
+    }
+    res.json({ message: 'Accommodation deleted successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Unable to delete accommodation.' });
+  }
+});
+
 module.exports = router;
