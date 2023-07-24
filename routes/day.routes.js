@@ -52,7 +52,7 @@ router.put("/:dayId", async (req, res) => {
           restaurants: newRestaurant._id,
         },
       });
-      console.log("newRestaurantID:", newRestaurant._id);
+
       console.log("updatedRestaurant:", newRestaurant);
     } else if (
       "hotel_class" in selectedPlace &&
@@ -70,6 +70,52 @@ router.put("/:dayId", async (req, res) => {
       await Day.findByIdAndUpdate(day._id, {
         accommodation: newAccommodation._id,
       });
+      console.log("updatedAccommodation:", newAccommodation);
+    } else if (selectedPlace.category.key === "attraction") {
+      const newPlan = await Plan.create({
+        name: selectedPlace.name,
+        description: selectedPlace.caption || "",
+        location: createdLocation._id,
+        address: selectedPlace.address,
+        phone: selectedPlace.phone,
+        ranking: selectedPlace.helpful_votes,
+        photo: {
+          images: {
+            large: {
+              width: selectedPlace.photo?.images?.large?.width || "0",
+              height: selectedPlace.photo?.images?.large?.height || "0",
+              url: selectedPlace.photo?.images?.large?.url || "",
+            },
+            medium: {
+              width: selectedPlace.photo?.images?.medium?.width || "0",
+              height: selectedPlace.photo?.images?.medium?.height || "0",
+              url: selectedPlace.photo?.images?.medium?.url || "",
+            },
+            original: {
+              width: selectedPlace.photo?.images?.original?.width || "0",
+              height: selectedPlace.photo?.images?.original?.height || "0",
+              url: selectedPlace.photo?.images?.original?.url || "",
+            },
+            small: {
+              width: selectedPlace.photo?.images?.small?.width || "0",
+              height: selectedPlace.photo?.images?.small?.height || "0",
+              url: selectedPlace.photo?.images?.small?.url || "",
+            },
+            thumbnail: {
+              width: selectedPlace.photo?.images?.thumbnail?.width || "0",
+              height: selectedPlace.photo?.images?.thumbnail?.height || "0",
+              url: selectedPlace.photo?.images?.thumbnail?.url || "",
+            },
+          },
+        },
+      });
+
+      await Day.findByIdAndUpdate(day._id, {
+        $push: {
+          plans: newPlan._id,
+        },
+      });
+      console.log("updatedPlan:", newPlan);
     } else {
       // Handle other types if needed
       return res
@@ -105,6 +151,18 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
   }
 });
 
+// GET plan by ID
+router.get("/plan/:planId", async (req, res) => {
+  const { planId } = req.params;
+
+  try {
+    const plan = await Plan.findById(planId);
+    res.json(plan);
+  } catch (err) {
+    res.status(500).json({ error: "Unable to fetch plan data." });
+  }
+});
+
 // GET accommodation by ID
 router.get("/accommodation/:accommodationId", async (req, res) => {
   const { accommodationId } = req.params;
@@ -117,6 +175,7 @@ router.get("/accommodation/:accommodationId", async (req, res) => {
   }
 });
 
+// DELETE restaurant by ID
 router.delete("/restaurant/:restaurantId", async (req, res) => {
   const { restaurantId } = req.params;
 
@@ -138,6 +197,26 @@ router.delete("/restaurant/:restaurantId", async (req, res) => {
   }
 });
 
+// DELETE plan by ID
+router.delete("/plan/:planId", async (req, res) => {
+  const { planId } = req.params;
+
+  try {
+    const deletedPlan = await Plan.findByIdAndDelete(planId);
+    if (!deletedPlan) {
+      return res.status(404).json({ error: "Plan not found." });
+    }
+
+    // Remove the plan from all days where it is referenced
+    await Day.updateMany({ plans: planId }, { $pull: { plans: planId } });
+
+    res.json({ message: "Plan deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ error: "Unable to delete Plan." });
+  }
+});
+
+// DELETE accommodation by ID
 router.delete("/accommodation/:accommodationId", async (req, res) => {
   const { accommodationId } = req.params;
 
