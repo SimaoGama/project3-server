@@ -153,11 +153,11 @@ router.get("/trips", async (req, res, next) => {
 });
 
 // Retrieves a specific trip by ID
-router.get("/trip/:id", async (req, res, next) => {
-  const { id } = req.params;
+router.get("/trip/:tripId", async (req, res, next) => {
+  const { tripId } = req.params;
 
   try {
-    const trip = await Trip.findById(id).populate("days");
+    const trip = await Trip.findById(tripId).populate("days");
 
     if (!trip) {
       return res
