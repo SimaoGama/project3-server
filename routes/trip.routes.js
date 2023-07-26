@@ -1,24 +1,24 @@
-const router = require("express").Router();
-const mongoose = require("mongoose");
-const StatusCodes = require("http-status-codes").StatusCodes;
+const router = require('express').Router();
+const mongoose = require('mongoose');
+const StatusCodes = require('http-status-codes').StatusCodes;
 // const fileUploader = require('../config/cloudinary.config');
 
 //importing the models
-const User = require("../models/User.model");
-const Trip = require("../models/trip-models/Trip.model");
-const Day = require("../models/trip-models/Day.model");
-const Accommodation = require("../models/trip-models/Accommodation.model");
-const Restaurant = require("../models/trip-models/Restaurant.model");
+const User = require('../models/User.model');
+const Trip = require('../models/trip-models/Trip.model');
+const Day = require('../models/trip-models/Day.model');
+const Accommodation = require('../models/trip-models/Accommodation.model');
+const Restaurant = require('../models/trip-models/Restaurant.model');
 
 //create a new trip
-router.post("/trips/new", async (req, res, next) => {
+router.post('/trips/new', async (req, res, next) => {
   const { destination, startDate, endDate } = req.body;
   const { userId } = req.body;
 
   if (endDate <= startDate) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ message: "End date must be after start date" });
+      .json({ message: 'End date must be after start date' });
   }
 
   const getTotalDays = (startDate, endDate) => {
@@ -37,7 +37,7 @@ router.post("/trips/new", async (req, res, next) => {
       startDate,
       endDate,
       days: [],
-      order: [],
+      order: []
     });
 
     const totalDays = getTotalDays(new Date(startDate), new Date(endDate));
@@ -51,40 +51,40 @@ router.post("/trips/new", async (req, res, next) => {
           city: null,
           accommodation: null,
           restaurants: [],
-          plans: [],
+          plans: []
         })
       )
     );
 
     // Add the created day IDs to the trip's "days" array
-    const dayIds = createdDays.map((day) => day._id);
+    const dayIds = createdDays.map(day => day._id);
     newTrip.days = dayIds;
 
     // Update the trip with the day order
-    newTrip.order = dayIds.map((dayId) => dayId.toString());
+    newTrip.order = dayIds.map(dayId => dayId.toString());
 
     // Save the updated trip
     await newTrip.save();
 
     res.json(newTrip);
   } catch (err) {
-    console.log("An error occurred creating a new trip", err);
+    console.log('An error occurred creating a new trip', err);
     next(err);
   }
 });
 
 //create new day
-router.post("/day", async (req, res, next) => {
+router.post('/day', async (req, res, next) => {
   const { tripId, date, city } = req.body;
 
   try {
     // Fetch accommodation data from API
-    const accommodationResponse = await axios.get("API_LINK");
+    const accommodationResponse = await axios.get('API_LINK');
     const accommodationData = accommodationResponse.data;
 
     // Fetch restaurants data from API
     const restaurantsResponse = await axios.get(
-      "https://travel-advisor.p.rapidapi.com/restaurants/list-in-boundary"
+      'https://travel-advisor.p.rapidapi.com/restaurants/list-in-boundary'
     ); // need to fetch bl/tr lng and lat to get the exact place and extract the info
     const restaurantsData = restaurantsResponse.data;
 
@@ -96,12 +96,12 @@ router.post("/day", async (req, res, next) => {
       phone: accommodationData.phone,
       rating: accommodationData.rating,
       reviews: accommodationData.reviews,
-      photos: accommodationData.photos,
+      photos: accommodationData.photos
     });
 
     // Create restaurants documents
     const newRestaurants = await Promise.all(
-      restaurantsData.map(async (restaurantData) => {
+      restaurantsData.map(async restaurantData => {
         const newRestaurant = await Restaurant.create({
           name: restaurantData.name,
           location: restaurantData.location,
@@ -109,7 +109,7 @@ router.post("/day", async (req, res, next) => {
           phone: restaurantData.phone,
           rating: restaurantData.rating,
           reviews: restaurantData.reviews,
-          photos: restaurantData.photos,
+          photos: restaurantData.photos
         });
 
         return newRestaurant;
@@ -121,8 +121,8 @@ router.post("/day", async (req, res, next) => {
       date,
       city,
       accommodation: newAccommodation._id,
-      restaurants: newRestaurants.map((restaurant) => restaurant._id),
-      plans: [],
+      restaurants: newRestaurants.map(restaurant => restaurant._id),
+      plans: []
     });
 
     // Update the trip's days array and save the trip
@@ -134,78 +134,78 @@ router.post("/day", async (req, res, next) => {
 
     res.json(updatedTrip);
   } catch (err) {
-    console.log("An error occurred creating a new day", err);
+    console.log('An error occurred creating a new day', err);
     next(err);
   }
 });
 
 // Retrieves all trips for the user
-router.get("/trips", async (req, res, next) => {
+router.get('/trips', async (req, res, next) => {
   const { userId } = req.query;
   try {
     const userTrips = await Trip.find({ userId }).populate({
-      path: "days",
+      path: 'days',
       populate: [
-        { path: "restaurants", model: "Restaurant" },
-        { path: "accommodation", model: "Accommodation" },
-        { path: "plans", model: "Plan" },
-      ],
+        { path: 'restaurants', model: 'Restaurant' },
+        { path: 'accommodation', model: 'Accommodation' },
+        { path: 'plans', model: 'Plan' }
+      ]
     });
 
     res.json(userTrips);
   } catch (err) {
-    console.log("An error occurred while getting the trips", err);
+    console.log('An error occurred while getting the trips', err);
     next(err);
   }
 });
 
 // Retrieves a specific trip by ID
-router.get("/trip/:tripId", async (req, res, next) => {
+router.get('/trip/:tripId', async (req, res, next) => {
   const { tripId } = req.params;
 
   try {
-    const trip = await Trip.findById(tripId).populate("days");
+    const trip = await Trip.findById(tripId).populate('days');
 
     if (!trip) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Trip not found" });
+        .json({ message: 'Trip not found' });
     }
 
     res.json(trip);
   } catch (err) {
-    console.log("An error occurred while retrieving the trip", err);
+    console.log('An error occurred while retrieving the trip', err);
     next(err);
   }
 });
 
-router.get("/trip/:tripId/populated", async (req, res, next) => {
+router.get('/trip/:tripId/populated', async (req, res, next) => {
   const { tripId } = req.params;
 
   try {
     const trip = await Trip.findById(tripId).populate({
-      path: "days",
+      path: 'days',
       populate: [
-        { path: "restaurants", model: "Restaurant" },
-        { path: "accommodation", model: "Accommodation" },
-        { path: "plans", model: "Plan" },
-      ],
+        { path: 'restaurants', model: 'Restaurant' },
+        { path: 'accommodation', model: 'Accommodation' },
+        { path: 'plans', model: 'Plan' }
+      ]
     });
 
     if (!trip) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Trip not found" });
+        .json({ message: 'Trip not found' });
     }
 
     res.json(trip);
   } catch (err) {
-    console.log("An error occurred while retrieving the trip", err);
+    console.log('An error occurred while retrieving the trip', err);
     next(err);
   }
 });
 
-router.put("/trip/:id", async (req, res, next) => {
+router.put('/trip/:id', async (req, res, next) => {
   const { id } = req.params;
   const { destination, startDate, endDate, order } = req.body;
 
@@ -213,16 +213,16 @@ router.put("/trip/:id", async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Specified id is not valid" });
+        .json({ message: 'Specified id is not valid' });
     }
 
     // Fetch the current trip from the database
-    const trip = await Trip.findById(id).populate("days");
+    const trip = await Trip.findById(id).populate('days');
 
     if (!trip) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "No trip found with the specified id" });
+        .json({ message: 'No trip found with the specified id' });
     }
 
     // Check if startDate or endDate have changed
@@ -244,7 +244,7 @@ router.put("/trip/:id", async (req, res, next) => {
     // Update the days array if startDate or endDate have changed
     if (startDateChanged || endDateChanged) {
       // Remove excess days outside the new range
-      trip.days = trip.days.filter((day) => {
+      trip.days = trip.days.filter(day => {
         const dayDate = new Date(day.date);
         return dayDate >= new Date(startDate) && dayDate <= new Date(endDate);
       });
@@ -280,7 +280,7 @@ router.put("/trip/:id", async (req, res, next) => {
           city: null,
           accommodation: null,
           restaurants: [],
-          plans: [],
+          plans: []
         });
 
         trip.days.push(day);
@@ -292,7 +292,7 @@ router.put("/trip/:id", async (req, res, next) => {
 
     res.json(updatedTrip);
   } catch (err) {
-    console.log("An error occurred while updating the trip", err);
+    console.log('An error occurred while updating the trip', err);
     next(err);
   }
 });
@@ -305,7 +305,7 @@ const getTotalDays = (startDate, endDate) => {
   return totalDays + 1;
 };
 
-router.delete("/trips/:id", async (req, res, next) => {
+router.delete('/trips/:id', async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -313,7 +313,7 @@ router.delete("/trips/:id", async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Specified id is not valid" });
+        .json({ message: 'Specified id is not valid' });
     }
 
     // Delete the trip
@@ -322,17 +322,17 @@ router.delete("/trips/:id", async (req, res, next) => {
     if (!deletedTrip) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ message: "Trip not found" });
+        .json({ message: 'Trip not found' });
     }
 
     // Delete the associated days
     await Day.deleteMany({ _id: { $in: deletedTrip.days } });
 
     res.json({
-      message: `Trip with id ${id} and associated days were deleted successfully`,
+      message: `Trip with id ${id} and associated days were deleted successfully`
     });
   } catch (err) {
-    console.log("An error occurred while deleting the trip", err);
+    console.log('An error occurred while deleting the trip', err);
     next(err);
   }
 });
@@ -350,29 +350,29 @@ router.delete("/trips/:id", async (req, res, next) => {
 // });
 
 // Controller function to update a specific day by ID
-router.put("/day/:dayId", async (req, res, next) => {
+router.put('/day/:dayId', async (req, res, next) => {
   const { dayId } = req.params;
   const updatedDay = req.body;
 
   try {
     // Find the day by ID and update it with the provided data
     const updatedDayData = await Day.findByIdAndUpdate(dayId, updatedDay, {
-      new: true, // Return the updated document
+      new: true // Return the updated document
     });
 
     if (!updatedDayData) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Day not found" });
+        .json({ error: 'Day not found' });
     }
 
     // Day updated successfully
     res.json(updatedDayData);
   } catch (error) {
-    console.error("Error updating day:", error);
+    console.error('Error updating day:', error);
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: "Internal server error" });
+      .json({ error: 'Internal server error' });
   }
 });
 
