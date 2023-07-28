@@ -9,6 +9,7 @@ const Trip = require("../models/trip-models/Trip.model");
 const Day = require("../models/trip-models/Day.model");
 const Accommodation = require("../models/trip-models/Accommodation.model");
 const Restaurant = require("../models/trip-models/Restaurant.model");
+const Location = require("../models/trip-models/Location.model");
 
 //create a new trip
 router.post("/trips/new", async (req, res, next) => {
@@ -349,6 +350,21 @@ router.put("/day/:dayId", async (req, res, next) => {
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ error: "Internal server error" });
+  }
+});
+
+router.get("/location/:locationId", async (req, res) => {
+  const locationId = req.params.locationId;
+
+  try {
+    const location = await Location.findById(locationId);
+    if (!location) {
+      return res.status(404).json({ error: "Location not found" });
+    }
+    res.json(location);
+  } catch (err) {
+    console.error("Error fetching location:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
