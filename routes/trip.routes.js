@@ -10,6 +10,7 @@ const Day = require("../models/trip-models/Day.model");
 const Accommodation = require("../models/trip-models/Accommodation.model");
 const Restaurant = require("../models/trip-models/Restaurant.model");
 const Location = require("../models/trip-models/Location.model");
+const { isAuthenticated } = require("../middleware/jwt.middleware");
 
 //create a new trip
 router.post("/trips/new", async (req, res, next) => {
@@ -282,7 +283,7 @@ const getTotalDays = (startDate, endDate) => {
   return totalDays + 1;
 };
 
-router.delete("/trips/:id", async (req, res, next) => {
+router.delete("/trips/:id", isAuthenticated, async (req, res, next) => {
   const { id } = req.params;
 
   try {
